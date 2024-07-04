@@ -557,10 +557,30 @@ now  run the first file
 
 # ansible-playbook first.yaml
 
+vi conditions.yml
+---
+- name: Installing Httpd
+  hosts: all
+  become: yes
+  tasks:
+  - name: Install httpd on Redhat
+    yum:
+      name: httpd
+      state: removed
+    when: ansible_os_family == "RedHat"
+
+  - name: Install nginx on Ubuntu
+    apt:
+      name: nginx
+      state: present
+    when: ansible_os_family == "Ubuntu"
+
+save the file
+# ansible-playbook conditions.yml
 
 vi third.yaml
 ---
-- hosts: localhost
+- hosts: all
   gather_facts: no
   become: yes
   tasks:
@@ -581,7 +601,7 @@ vi third.yaml
 
 Now run the third file
 
-ansible-playbook third.yaml
+# ansible-playbook third.yaml
 
 
 
