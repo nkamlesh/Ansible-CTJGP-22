@@ -452,7 +452,7 @@ vi index1.html
 <html>
   <body>
   <h1>This is the alternate Home Page</h1>
-  <img src= "https://d3ffutjd2e35ce.cloudfront.net/assets/logo1.png" >
+  <img width="100%" src= "https://cdn-labgd.nitrocdn.com/DgsEbCQFApREClXUXMwcDAPWJfHtBIby/assets/images/optimized/rev-f4df46d/content.cloudthat.com/consulting/wp-content/uploads/2023/11/30110123/Banner__Homepage_-Superstar-Award1.webp" >
   </body>
 </html>
 
