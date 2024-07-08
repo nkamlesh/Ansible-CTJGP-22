@@ -752,4 +752,67 @@ save the file :wq
 #ansible-playbook task5.yml
 
 ansible all -a "tail -n 2 /etc/passwd"
+#task 6-1: uninstall httpd
+vi task6-1.yml
+---
+- hosts: all
+  become: yes
+  connection: ssh
+  user: ec2-user
+  tasks:
+  - name: Install Apache Web Server
+    yum:
+       name: httpd
+       state: absent
 
+save the file :wq
+
+#ansible-playbook task6-1.yml
+
+#task 6-2: install httpd and run a until loop to check status
+vi task6-2.yml
+---
+- hosts: all
+  become: yes
+  connection: ssh
+  user: ec2-user
+  tasks:
+  - name: Install Apache Web Server
+    yum:
+       name: httpd
+       state: latest
+  - name: Verify Status of Service
+    shell: systemctl status httpd
+    register: result
+    until: result.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
+
+save the file :wq
+
+#ansible-playbook task6-2.yml
+#task 6-3: set the status of httpd to started
+---
+- hosts: all
+  become: yes
+  connection: ssh
+  user: ec2-user
+  tasks:
+  - name: Install Apache Web Server
+    yum:
+       name: httpd
+       state: latest
+  - name: start Apache Web Server
+    service:
+       name: httpd
+       state: started
+  - name: Verify Status of Service
+    shell: systemctl status httpd
+    register: result
+    until: result.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
+
+save the file :wq
+
+#ansible-playbook task6-3.yml
