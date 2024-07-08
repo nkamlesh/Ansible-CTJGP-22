@@ -760,7 +760,7 @@ vi task6-1.yml
   connection: ssh
   user: ec2-user
   tasks:
-  - name: Install Apache Web Server
+  - name: UnInstall Apache Web Server
     yum:
        name: httpd
        state: absent
@@ -816,3 +816,385 @@ save the file :wq
 save the file :wq
 
 #ansible-playbook task6-3.yml
+
+##########################################################################################
+Lab 7: Implementing Ansible Vault
+###########################################################################################
+# Switch to labs directory inside /home/ec2-user
+  cd ~/labs 
+
+
+# Create a sample playbook using below.
+
+  vi implement-vault.yml
+
+---
+- hosts: all
+  tasks:
+  - file:
+        path: /home/ec2-user/test.conf
+        state: touch
+        owner: ec2-user
+        group: ec2-user
+        mode: 0644
+
+
+  # Encrypt the playbook using vault using encrypt option
+  ansible-vault encrypt implement-vault.yml
+
+
+  # Verify that the playbook contents are encrypted
+  cat implement-vault.yml
+
+
+
+  # View the playbook contents (in plaintext) without decrypting by providing the password used for encryption
+  ansible-vault view implement-vault.yml
+
+
+ # To execute the playbook, you need to pass additional option (--ask-vault-pass) as below
+  ansible-playbook --ask-vault-pass implement-vault.yml
+
+
+  # To make any changes to the playbook without decrypting, use edit 
+  ansible-vault edit implement-vault.yml
+  
+
+  # Execute the playbook with changes
+  ansible-playbook --ask-vault-pass implement-vault.yml
+
+
+  # Use rekey option to change the vault password
+  ansible-vault rekey implement-vault.yml
+  
+
+  # Verify the playbook contents are encrypted
+  cat implement-vault.yml
+
+
+  # Decrypt the contents using decrypt option
+  ansible-vault decrypt implement-vault.yml
+
+
+  # Verify that playbook contents are visible in plain-text
+  cat implement-vault.yml
+===========================================================
+Task 1: Loops with Ansible Playbook
+=========================================================================
+
+
+vi looplab.yml
+---
+- hosts: all
+  become: yes
+  tasks:
+   - name: creating users
+     user:
+       name: "{{ item }}"
+       state: present
+     with_items:
+      - userX
+      - userY
+      - userZ
+
+# save the file using "ESCAPE + :wq!"
+
+# Execute the playbook
+$ ansible-playbook looplab.yml
+
+
+#Verify if the users mentioned in the list were added by using an Ansible ad-hoc command
+ansible all -a "tail -n 3 /etc/passwd"
+
+==========================================================================================
+Task 2: Tags with Ansible Playbooks
+==========================================================================================
+# Create and edit tagslabs.yml in the same labs directory 
+
+
+vi tagslabs.yml
+---
+- hosts: all
+  become: yes
+  user: ec2-user
+  connection: ssh
+  gather_facts: no
+  tasks:
+    - name: Install telnet
+      yum: pkg=telnet state=latest
+      tags:
+        - packages
+    - name: Verifying telnet installation
+      raw: yum list installed | grep telnet > /home/ec2-user/pkg.log
+      tags:
+        - logging
+
+
+
+#save the file using "ESCAPE + :wq!"
+
+#Execute the playbook
+$ ansible-playbook tagslabs.yml
+
+#Run the playbook again, this time using tags. Notice that only the tasks associated with the mentioned tags are running
+
+$ ansible-playbook -t "logging" tagslabs.yml
+
+$ ansible-playbook -t "packages" tagslabs.yml
+
+=============================================================================================
+Task 3: Prompts with Ansible Playbooks
+=============================================================================================
+#Create and edit promptlab.yml in the same labs directory 
+
+$ vi promptlab.yml
+
+---
+- hosts: all
+  become: yes
+  user: ec2-user
+  connection: ssh
+  vars_prompt:
+    - name: pkginstall
+      prompt: Which package do you want to install?
+      default: telnet
+      private: no
+  tasks:
+    - name: Install the package specified
+      yum: pkg={{ pkginstall }} state=latest
+
+
+#save the file using "ESCAPE + :wq!"
+
+#Execute the playbook & you will be prompt for enter the package name which you want to install
+#If no package is mentioned, telnet is installed by default
+
+$ ansible-playbook promptlab.yml
+
+#Verify if the specified package httpd is installed. SSH into one of the machines and verify using the command 
+
+$ ssh ec2-user@< managed_node_private_ip >
+
+$ rpm -qa | grep httpd
+
+ansible all -m "command" -a "rpm -qa | grep httpd"
+================================================================================================
+Task 4: Until function
+================================================================================================
+
+#Create and edit untillab.yml in the same labs directory 
+
+$ vi untillab.yml
+
+---
+- hosts: all
+  become: yes
+  connection: ssh
+  user: ec2-user
+  tasks:
+  - name: Install Apache Web Server
+    yum:
+       name: httpd
+       state: latest
+  - name: Verify Status of Service
+    shell: systemctl status httpd
+    register: result
+    until: result.stdout.find("active (running)") != -1
+    retries: 5
+    delay: 10
+
+#save the file using "ESCAPE + :wq!"
+
+# Execute the playbook
+#Notice the output of the command is shown along with the Ansible until command output
+
+$ ansible-playbook untillab.yml
+
+# Login to the managed node from another window and start the httpd service
+# You can use the same key (as used for CN) to login to managed node 
+
+$ ssh ec2-user@< managed_node_private_ip >
+$ sudo service httpd start
+
+# you can check the status of httpd by
+$ sudo service httpd status
+
+=============================================================================================
+Task 5: Run Once with Ansible Playbook
+=============================================================================================
+
+#Create and edit rolab.yml in the same labs directory 
+
+$ vi rolab.yml
+
+---
+- hosts: all
+  become: yes
+  user: ec2-user
+  connection: ssh
+  gather_facts: no
+  tasks:
+    - name: Recording uptime 
+      raw: /usr/bin/uptime >> /home/ec2-user/uptime
+      run_once: true
+
+#save the file using "ESCAPE + :wq!"
+
+# Execute the playbook
+$ ansible-playbook rolab.yml
+
+#Verify if the file exists and has the right contents on either of the client machines(manage nodes)
+$ ansible all -a "cat /home/ec2-user/uptime"
+
+#now open the file and edit parameter as run_once: false 
+# Execute the playbook again
+$ ansible-playbook rolab.yml
+
+#Verify if the file exists and has the right contents on the client machines(manage nodes)
+$ ansible all -a "cat /home/ec2-user/uptime"
+
+
+==================================================================================================
+Task 6: Blocks with Ansible Playbook
+===================================================================================================
+
+#Create and edit blklab.yml in the same labs directory 
+#Notice that the “web_package” variable is an invalid package. Due to the invalid package in a block, tasks under rescue will run
+
+$ vi blklab.yml
+
+---
+- hosts: all
+  become: yes
+  user: ec2-user
+  connection: ssh
+  gather_facts: no
+  tasks:
+    - block:
+        - name: Install {{ web_package }} package
+          yum:
+            name: "{{ web_package }}"
+            state: latest
+      rescue:
+        - name: Install {{ db_package }} package
+          yum:
+            name: "{{ db_package }}"
+            state: latest
+      always:
+        - name: Start {{ db_service }} service
+          service:
+            name: "{{ db_service }}"
+            state: started
+  vars:
+    web_package: http
+    db_package: mariadb-server
+    db_service: mariadb
+
+#save the file using "ESCAPE + :wq!"
+
+#Execute the playbook
+#Block tasks fail and that Rescue tasks are running due to the failure of block tasks. The Always tasks run independently
+
+$ ansible-playbook blklab.yml
+
+#Now fix the package name in the Playbook (web_package: httpd) and run the Playbook again
+$ ansible-playbook blklab.yml
+
+#Notice that the tasks under rescue are not running as block tasks ran successfully.
+==================================================================================================
+Task 7: Working with handlers
+===================================================================================================
+#list file, if exists continue, else install using httpd using playbook install-httpd
+ls -l /etc/httpd/conf/httpd.conf
+
+#Install httpd
+vi install-httpd.yml
+---
+- name: This play will install apache web servers on all the hosts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Task1 will install httpd using yum
+      yum:
+        name: httpd
+        update_cache: yes
+        state: latest
+
+save the file :wq
+
+#ansible-playbook install-httpd.yml
+
+#copy file httpd.conf file to /home/ec2-user
+cp /etc/httpd/conf/httpd.conf ./httpd.conf
+
+#create copy of original file
+cp  ./httpd.conf  ./httpd.conf.og
+
+#edit httpd.conf file and uncomment line -> #ErrorDocument 404 /missing.html and save the file
+
+# Install httpd, copy the base html page and httpd.conf.og
+vi install-apache.yml
+---
+- name: This play will install apache web servers on all the hosts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Task1 will install httpd using yum
+      yum:
+        name: httpd
+        update_cache: yes
+        state: latest
+    - name: Task2 will upload custom index.html into all hosts
+      copy:
+       src: "index.html"
+       dest: "/var/www/html/index.html"
+    - name: Task3 will setup attributes for file
+      file:
+        path: /var/www/html/index.html
+        owner: apache
+        group: apache
+        mode:  0644
+    - name: httpd.conf.og into all hosts
+      copy:
+       src: "httpd.conf.og"
+       dest: "/etc/httpd/conf/httpd.conf"
+    - name: Task4 will start the httpd
+      service:
+        name: httpd
+        state: started
+
+save the file :wq
+
+#ansible-playbook install-apache.yml
+
+# now whenever we change httpd.conf, we need to restart server otherwise not required
+vi handler.yml
+---
+- name: handler demo
+  hosts: all
+  become: yes
+  tasks:
+    - name: copy httpd.conf file
+      copy:
+       src: "httpd.conf"
+       dest: /etc/httpd/conf/httpd.conf
+      notify:
+       - restart httpd
+    - name: upload custom error.html into all hosts
+      copy:
+       src: "missing.html"
+       dest: "/var/www/html/missing.html"
+
+  handlers:
+    - name: restart httpd
+      service:
+        name: httpd
+        state: restarted
+
+save the file :wq
+
+#ansible-playbook handler.yml
+
+#now re-run the the playbook to check the execution of handler, as there is no change, handler will not be executed
+
+#ansible-playbook handler.yml
