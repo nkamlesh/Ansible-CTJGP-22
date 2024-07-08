@@ -712,11 +712,44 @@ save the file :wq
 docker_version: 20.10.2
 http_port: 2200
 app_version: v-1.1
+
 save the file :wq
 
 #ansible-playbook task4.yml
 
 #task 5 - create a user based on OS
+---
+- name: create users
+  hosts: all
+  become: yes
+  tasks:
+  - name: Add CentOS user
+    user:
+      name: test_centos
+      state: present
+    when: ansible_facts['distribution']=="CentOS"  
+    
+  - name: Add RedHat user
+    user:
+      name: test_redhat
+      state: present
+    when: ansible_facts['distribution']=="RedHat"
+    
+  - name: Add Ubuntu user
+    user:
+      name: test_ubuntu
+      state: present
+    when: ansible_facts['distribution']=="Ubuntu"
+    
+  - name: Add Debian user
+    user:
+      name: test_debian
+      state: present
+    when: ansible_facts['distribution']=="Debian"
 
+save the file :wq
 
+#ansible-playbook task5.yml
+
+ansible all -a "tail -n 2 /etc/passwd"
 
