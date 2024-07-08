@@ -602,6 +602,121 @@ vi third.yaml
 Now run the third file
 
 # ansible-playbook third.yaml
+==========================Day 4=================================
+#Task1
+# vi task1.yml
+---
+- name: demo scripts
+  hosts: all
+  become: yes
+  vars:
+    list1:
+    - yum
+    - zip
+    - unzip
+
+    dict1:
+      name: xyz
+      age: 30
+
+    os: windows
+
+  tasks:
+  - name: simple variables
+    debug:
+      msg: printing simple variable
+  - name: simple variables
+    debug:
+      var: os
+  - name: list variables
+    debug:
+      msg:
+      - item 0: "{{ list1[0] }}"
+      - item 1: "{{ list1[1] }}"
+      - item 2: "{{ list1[2] }}"
+  - name: list variables
+    debug:
+      var: list1
+  - name: dict variables
+    debug:
+      msg:
+      - my name is {{ dict1['name'] }} and i am {{ dict1['age'] }} years old.
+  - name: dict variables
+    debug:
+      var: dict1
+
+save the file :wq
+#ansible-playbook task1.yml
+
+# task2 - run a loop using with_items
+---
+- name: Install and Start the service
+  hosts: all
+  become: yes
+  vars:
+    - apps: [zip,unzip,httpd,vim,telnet]
+
+  tasks:
+  - name: Installing packages
+    yum:
+      name: "{{ item }}"
+      state: present
+    tags: i-loops
+    with_items: "{{ apps }}"
+
+save the file :wq
+#ansible-playbook task2.yml
+
+#task 3: create a users using loop
+---
+- name: create set of users
+  hosts: all
+  become: yes
+
+  tasks:
+  - name: print  users from list
+    user:
+      name: "{{ item }}"
+      state: present
+    loop:
+    - testuser1
+    - testuser2
+
+save the file :wq
+#ansible-playbook task3.yml
+#to verify : ansible all -a "tail -n 3 /etc/passwd"
+
+#task 4 - variables in external file 
+---
+- name: Example External Variables file
+  hosts: all
+  vars_files:
+    - ./variables.yml
+
+  tasks:
+  - name: Print the value of variable docker_version
+    debug: 
+      msg: "{{ docker_version}} "
+  
+  - name: Print the value of group variable http_port
+    debug: 
+      msg: "{{ http_port}} "
+  
+  - name: Print the value of host variable app_version
+    debug: 
+      msg: "{{ app_version}} "
+
+save the file :wq
+
+#create variables.yml
+docker_version: 20.10.2
+http_port: 2200
+app_version: v-1.1
+save the file :wq
+
+#ansible-playbook task4.yml
+
+#task 5 - create a user based on OS
 
 
 
