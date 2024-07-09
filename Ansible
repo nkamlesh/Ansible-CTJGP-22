@@ -1131,6 +1131,21 @@ cp /etc/httpd/conf/httpd.conf ./httpd.conf
 cp  ./httpd.conf  ./httpd.conf.og
 
 #edit httpd.conf file and uncomment line -> #ErrorDocument 404 /missing.html and save the file
+# stop httpd server if its running on remote machi, using below playbook: [use if httpd service is running]
+vi stophttpd.yml
+---
+- name: This play will install apache web servers on all the hosts
+  hosts: all
+  become: yes
+  tasks:
+    - name: Task4 will start the httpd
+      service:
+        name: httpd
+        state: stopped
+
+save the file :wq
+
+#ansible-playbook stophttpd.yml
 
 # Install httpd, copy the base html page and httpd.conf.og
 vi install-apache.yml
