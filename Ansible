@@ -114,7 +114,7 @@ AWS secret Access key
         msg: "{{ ec2var.results[1].instances[0].private_ip }}"
 
 
-save the file
+save the file => esc -> :wq -> enter
 
 ansible-playbook ec2-playbook.yml
 
