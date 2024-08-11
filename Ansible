@@ -1111,7 +1111,7 @@ ls -l /etc/httpd/conf/httpd.conf
 vi install-httpd.yml
 ---
 - name: This play will install apache web servers on all the hosts
-  hosts: all
+  hosts: localhost
   become: yes
   tasks:
     - name: Task1 will install httpd using yum
